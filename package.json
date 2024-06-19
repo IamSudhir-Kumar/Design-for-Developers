@@ -1,14 +1,16 @@
 {
-  "name": "argumented-reality-projects",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "ar",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "devDependencies": {
-    "vite": "^5.2.0"
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "http": "^0.0.1-security",
+    "three": "^0.165.0"
   }
 }

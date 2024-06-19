@@ -1,13 +1,35 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
+    <title>Attractive AR Experience</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.rawgit.com/donmccurdy/aframe-extras/v6.0.0/dist/aframe-extras.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-layout-component/dist/aframe-layout-component.min.js"></script>
+    <script src="https://unpkg.com/super-hands/dist/super-hands.min.js"></script>
   </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/main.js"></script>
+  <body style="margin: 0; overflow: hidden;">
+    <a-scene embedded arjs="sourceType: webcam;" vr-mode-ui="enabled: false">
+      <!-- Sky Background -->
+      <!-- <a-sky color="#ECECEC"></a-sky> -->
+      
+      <!-- Ground Plane -->
+      <a-plane position="0 0 0" rotation="-90 0 0" width="5" height="5" color="#7BC8A4" shadow gesture-detector></a-plane>
+      
+      <!-- Custom 3D Shapes with Animation -->
+      <a-entity id="custom-shapes" position="0 0 0" gesture-detector super-hands>
+        <a-entity position="0.5 0.2 -3" geometry="primitive: torusKnot; radius: 0.9; tube: 1" material="color: #0077ff;" animation="property: rotation; to: 360 360 0; loop: true; dur: 10000"></a-entity>
+        <a-entity position="-1 0.5 -4" geometry="primitive: dodecahedron; radius: 0.5" material="color: #ff0077;" animation="property: rotation; to: 360 360 0; loop: true; dur: 10000"></a-entity>
+        <a-entity position="1 0.5 -5" geometry="primitive: icosahedron; radius: 0.5" material="color: #77ff00;" animation="property: rotation; to: 360 360 0; loop: true; dur: 10000"></a-entity>
+      </a-entity>
+      
+      <!-- Lighting -->
+      <a-light type="ambient" color="#ffffff" intensity="0.5"></a-light>
+      <a-light type="point" position="2 4 2" intensity="1" castShadow gesture-detector></a-light>
+
+      <!-- AR Marker -->
+      <a-marker-camera preset="hiro" gesture-detector></a-marker-camera>
+    </a-scene>
   </body>
 </html>
