@@ -1,4 +1,5 @@
 import * as THREE from "https://cdn.skypack.dev/three@0.132.2";
+import { XRButton } from './libs/XRButton.js'; // Assuming you have downloaded XRButton.js locally
 
 // Setup scene, camera, and renderer
 const scene = new THREE.Scene();
@@ -8,62 +9,72 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.xr.enabled = true;
 document.body.appendChild(renderer.domElement);
 
+// Add an AR button to enter AR mode
+document.body.appendChild(XRButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
+
 // Add a light to the scene
 const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
 scene.add(light);
 
-// Create a cube and add it to the scene
-const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+// Create a torus knot and add it to the scene
+const geometry = new THREE.TorusKnotGeometry(0.1, 0.03, 100, 16);
 const material = new THREE.MeshPhongMaterial({ color: 0x44aa88 });
-const cube = new THREE.Mesh(geometry, material);
-cube.position.set(0, 0, -0.5);
-scene.add(cube);
+const torusKnot = new THREE.Mesh(geometry, material);
+torusKnot.visible = false; // Hide the torus knot initially
+scene.add(torusKnot);
 
-// Handle AR session
-const enterARButton = document.getElementById('enter-ar');
-if ('xr' in navigator) {
-  console.log("WebXR is supported by the browser.");
-  enterARButton.addEventListener('click', () => {
-    navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-      if (supported) {
-        console.log("AR session is supported.");
-        navigator.xr.requestSession('immersive-ar').then(onSessionStarted).catch((error) => {
-          console.error('Failed to start AR session:', error.name, error.message);
-          alert('AR session could not be started. Please try again or use a compatible device.');
-        });
-      } else {
-        alert('AR is not supported on this device/browser.');
-        console.log('AR is not supported on this device/browser.');
+// Particle system
+const particleGeometry = new THREE.BufferGeometry();
+const particleCount = 1000;
+const positions = new Float32Array(particleCount * 3);
+for (let i = 0; i < particleCount; i++) {
+  positions[i * 3] = (Math.random() - 0.5) * 2;
+  positions[i * 3 + 1] = (Math.random() - 0.5) * 2;
+  positions[i * 3 + 2] = (Math.random() - 0.5) * 2;
+}
+particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+const particleMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.01 });
+const particles = new THREE.Points(particleGeometry, particleMaterial);
+particles.visible = false; // Hide the particles initially
+scene.add(particles);
+
+// Hit testing variables
+let hitTestSource = null;
+let hitTestSourceRequested = false;
+
+// Event listener for session start
+renderer.xr.addEventListener('sessionstart', async () => {
+  const session = renderer.xr.getSession();
+  const viewerSpace = await session.requestReferenceSpace('viewer');
+  hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+
+  // Add event listener for user interactions
+  session.addEventListener('select', (event) => {
+    if (hitTestSource) {
+      const frame = event.frame;
+      const referenceSpace = renderer.xr.getReferenceSpace();
+      const hitTestResults = frame.getHitTestResults(hitTestSource);
+
+      if (hitTestResults.length > 0) {
+        const hit = hitTestResults[0];
+        const hitPose = hit.getPose(referenceSpace);
+
+        // Set the position of the torus knot and particles to the hit position
+        torusKnot.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
+        particles.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
+        torusKnot.visible = true; // Make the torus knot visible when a hit is detected
+        particles.visible = true; // Make the particles visible when a hit is detected
       }
-    }).catch((error) => {
-      console.error('Failed to check AR session support:', error.name, error.message);
-      alert('AR session support check failed.');
-    });
+    }
   });
-} else {
-  console.log("WebXR is not supported by the browser.");
-  enterARButton.addEventListener('click', () => {
-    alert('AR is not supported on this device/browser.');
-  });
-}
+});
 
-function onSessionStarted(session) {
-  renderer.xr.setSession(session);
-
-  const referenceSpaceType = 'local';
-  session.requestReferenceSpace(referenceSpaceType).then((referenceSpace) => {
-    renderer.xr.setReferenceSpace(referenceSpace);
-    console.log('Reference space set.');
-  }).catch((error) => {
-    console.error('Failed to request reference space:', error.name, error.message);
-  });
-
-  session.addEventListener('end', onSessionEnded);
-}
-
-function onSessionEnded() {
-  console.log('Session ended');
-}
+// Event listener for session end
+renderer.xr.addEventListener('sessionend', () => {
+  hitTestSourceRequested = false;
+  hitTestSource = null;
+});
 
 // Animation loop
 function animate() {
@@ -71,21 +82,41 @@ function animate() {
 }
 
 function render(timestamp, frame) {
-  if (frame) {
-    const session = frame.session;
-    const referenceSpace = renderer.xr.getReferenceSpace();
+  if (hitTestSourceRequested === false) {
+    const session = renderer.xr.getSession();
 
-    // Hit testing
-    const viewerPose = frame.getViewerPose(referenceSpace);
-    if (viewerPose) {
-      const hitTestSource = frame.getHitTestResults(renderer.xr.getHitTestSource());
-      if (hitTestSource.length > 0) {
-        const hit = hitTestSource[0];
-        const hitPose = hit.getPose(referenceSpace);
-        cube.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
-        cube.updateMatrixWorld(true);
+    if (session) {
+      session.requestReferenceSpace('viewer').then((referenceSpace) => {
+        session.requestHitTestSource({ space: referenceSpace }).then((source) => {
+          hitTestSource = source;
+        });
+      });
+
+      session.addEventListener('end', () => {
+        hitTestSourceRequested = false;
+        hitTestSource = null;
+      });
+
+      hitTestSourceRequested = true;
+    }
+  }
+
+  // Rotate the torus knot for a dynamic effect
+  if (torusKnot.visible) {
+    torusKnot.rotation.x += 0.01;
+    torusKnot.rotation.y += 0.01;
+  }
+
+  // Move the particles for a dynamic effect
+  if (particles.visible) {
+    const positions = particles.geometry.attributes.position.array;
+    for (let i = 0; i < particleCount; i++) {
+      positions[i * 3 + 1] -= 0.01;
+      if (positions[i * 3 + 1] < -1) {
+        positions[i * 3 + 1] = 1;
       }
     }
+    particles.geometry.attributes.position.needsUpdate = true;
   }
 
   renderer.render(scene, camera);
