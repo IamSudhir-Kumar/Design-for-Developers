@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Attractive AR Experience</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.rawgit.com/donmccurdy/aframe-extras/v6.0.0/dist/aframe-extras.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-layout-component/dist/aframe-layout-component.min.js"></script>
+    <script src="https://unpkg.com/super-hands/dist/super-hands.min.js"></script>
+  </head>
+  <body style="margin: 0; overflow: hidden;">
+    <a-scene embedded arjs="sourceType: webcam;" vr-mode-ui="enabled: false">
+      <!-- Ground Plane -->
+      <a-plane position="0 0 -3" rotation="-90 0 0" width="5" height="5" color="#7BC8A4" shadow gesture-detector></a-plane>
+      
+      <!-- Custom 3D Models -->
+      <a-entity id="custom-shapes" position="0 0 0" gesture-detector super-hands>
+        <a-gltf-model src="model.glb" position="0 1 -3" scale="0.5 0.5 0.5" animation-mixer></a-gltf-model>
+
+        <!-- Revolving Assets -->
+        <a-entity position="0 1 -3">
+          <a-entity position="-1 0 0" geometry="primitive: sphere; radius: 0.2" material="color: #ff0077;" animation="property: rotation; to: 0 360 0; loop: true; dur: 5000"></a-entity>
+          <a-entity position="1 0 0" geometry="primitive: box; depth: 0.2; height: 0.2; width: 0.2" material="color: #77ff00;" animation="property: rotation; to: 0 360 0; loop: true; dur: 5000"></a-entity>
+          <a-entity position="0 0 -1" geometry="primitive: cone; radius-bottom: 0.2; radius-top: 0.1; height: 0.4" material="color: #0077ff;" animation="property: rotation; to: 0 360 0; loop: true; dur: 5000"></a-entity>
+        </a-entity>
+      </a-entity>
+      
+      <!-- Lighting -->
+      <a-light type="ambient" color="#ffffff" intensity="0.7"></a-light>
+      <a-light type="directional" position="1 3 2" intensity="1" castShadow></a-light>
+      <a-light type="directional" position="-1 2 -2" intensity="0.5" castShadow></a-light>
+
+      <!-- AR Marker -->
+      <a-marker-camera preset="hiro" gesture-detector></a-marker-camera>
+    </a-scene>
+  </body>
+</html>
