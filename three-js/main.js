@@ -1,5 +1,6 @@
 import * as THREE from "https://cdn.skypack.dev/three@0.132.2";
 import { XRButton } from './libs/XRButton.js'; // Assuming you have downloaded XRButton.js locally
+import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/loaders/GLTFLoader.js';
 
 // Setup scene, camera, and renderer
 const scene = new THREE.Scene();
@@ -39,6 +40,16 @@ const particles = new THREE.Points(particleGeometry, particleMaterial);
 particles.visible = false; // Hide the particles initially
 scene.add(particles);
 
+// Load GLTF model
+let gltfModel;
+const loader = new GLTFLoader();
+loader.load('./model.glb', (gltf) => {
+  gltfModel = gltf.scene;
+  gltfModel.scale.set(0.5, 0.5, 0.5);
+  gltfModel.visible = false; // Hide the model initially
+  scene.add(gltfModel);
+});
+
 // Hit testing variables
 let hitTestSource = null;
 let hitTestSourceRequested = false;
@@ -60,9 +71,16 @@ renderer.xr.addEventListener('sessionstart', async () => {
         const hit = hitTestResults[0];
         const hitPose = hit.getPose(referenceSpace);
 
-        // Set the position of the torus knot and particles to the hit position
-        torusKnot.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
-        particles.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
+        // Set the position of the torus knot, particles, and GLTF model to the hit position
+        const position = new THREE.Vector3(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
+        
+        torusKnot.position.copy(position);
+        particles.position.copy(position);
+        if (gltfModel) {
+          gltfModel.position.copy(position);
+          gltfModel.visible = true; // Make the GLTF model visible when a hit is detected
+        }
+        
         torusKnot.visible = true; // Make the torus knot visible when a hit is detected
         particles.visible = true; // Make the particles visible when a hit is detected
       }
