@@ -13,16 +13,19 @@ document.body.appendChild(renderer.domElement);
 // Add an AR button to enter AR mode
 document.body.appendChild(XRButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
 
-// Add a light to the scene
-const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-scene.add(light);
+// Add lights to the scene
+const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 0.5); // Reduced intensity
+scene.add(hemisphereLight);
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 5); // New ambient light
+scene.add(ambientLight);
 
 // Create a torus knot and add it to the scene
 const geometry = new THREE.TorusKnotGeometry(0.1, 0.03, 100, 16);
 const material = new THREE.MeshPhongMaterial({ color: 0x44aa88 });
 const torusKnot = new THREE.Mesh(geometry, material);
 torusKnot.visible = false; // Hide the torus knot initially
-scene.add(torusKnot);
+// scene.add(torusKnot);
 
 // Particle system
 const particleGeometry = new THREE.BufferGeometry();
@@ -42,12 +45,27 @@ scene.add(particles);
 
 // Load GLTF model
 let gltfModel;
+let mixer;
 const loader = new GLTFLoader();
 loader.load('./model.glb', (gltf) => {
   gltfModel = gltf.scene;
   gltfModel.scale.set(0.5, 0.5, 0.5);
+  gltfModel.traverse((node) => {
+    if (node.isMesh) {
+      node.material.transparent = false; // Ensure transparency is off
+      node.material.depthWrite = true; // Ensure depth writing is enabled
+    }
+  });
   gltfModel.visible = false; // Hide the model initially
   scene.add(gltfModel);
+
+  // Setup animation mixer and play animations
+  if (gltf.animations && gltf.animations.length) {
+    mixer = new THREE.AnimationMixer(gltfModel);
+    gltf.animations.forEach((clip) => {
+      mixer.clipAction(clip).play();
+    });
+  }
 });
 
 // Hit testing variables
@@ -137,7 +155,14 @@ function render(timestamp, frame) {
     particles.geometry.attributes.position.needsUpdate = true;
   }
 
+  // Update animation mixer
+  if (mixer) {
+    const delta = clock.getDelta();
+    mixer.update(delta); // Update mixer with delta time
+  }
+
   renderer.render(scene, camera);
 }
 
+const clock = new THREE.Clock(); // Add a clock to manage time delta
 animate();
